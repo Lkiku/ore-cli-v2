@@ -1,5 +1,5 @@
 # ORE CLI
-English | [简体中文](README_ZH-CN.md)
+English
 
 A command line interface for ORE cryptocurrency mining.
 
