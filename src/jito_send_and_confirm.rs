@@ -140,7 +140,7 @@ impl Miner {
         &self,
         ixs: &[Instruction],
         compute_budget: ComputeBudget,
-        skip_confirm: bool,
+        _skip_confirm: bool,
         tips: Arc<RwLock<JitoTips>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let progress_bar = spinner::new_progress_bar();
@@ -279,7 +279,7 @@ impl Miner {
             sleep(Duration::from_millis(400 * ( attempts + 1 ))).await;
 
             attempts += 1;
-            if attempts > 3 {
+            if attempts > 8 {
                 progress_bar.finish_with_message(format!("{}: Max retries", "ERROR".bold().red()));
                 return Err(Box::new(ClientError {
                     request: None,
