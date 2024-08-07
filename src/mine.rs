@@ -1,4 +1,5 @@
 use std::{sync::Arc, time::Instant};
+use std::cmp::max;
 
 use colored::*;
 use drillx::{
@@ -48,16 +49,17 @@ impl Miner {
 
             // Run drillx
             let config = get_config(&self.rpc_client).await;
+            let custom_min_difficulty: u32 = 15;
             let solution = Self::find_hash_par(
                 proof,
                 cutoff_time,
                 args.threads,
-                config.min_difficulty as u32,
+                max(custom_min_difficulty,config.min_difficulty as u32),
             )
             .await;
 
             // Submit most difficult hash
-            let mut compute_budget = 500_000;
+            let compute_budget = 500_000;
             let mut ixs = vec![ore_api::instruction::auth(proof_pubkey(signer.pubkey()))];
             // if self.should_reset(config).await {
             //     compute_budget += 100_000;
@@ -84,8 +86,10 @@ impl Miner {
         // Dispatch job to each thread
         let progress_bar = Arc::new(spinner::new_progress_bar());
         progress_bar.set_message("Mining...");
+        let global_best_difficulty = Arc::new(std::sync::RwLock::new(0u32));
         let handles: Vec<_> = (0..threads)
             .map(|i| {
+                let global_best_difficulty = Arc::clone(&global_best_difficulty);
                 std::thread::spawn({
                     let proof = proof.clone();
                     let progress_bar = progress_bar.clone();
@@ -108,19 +112,32 @@ impl Miner {
                                     best_nonce = nonce;
                                     best_difficulty = difficulty;
                                     best_hash = hx;
+                                    if best_difficulty.gt(&*global_best_difficulty.read().unwrap()) {
+                                        *global_best_difficulty.write().unwrap() = best_difficulty;
+                                    }
                                 }
                             }
 
                             // Exit if time has elapsed
                             if nonce % 100 == 0 {
+                                let global_best_difficulty = *global_best_difficulty.read().unwrap();
                                 if timer.elapsed().as_secs().ge(&cutoff_time) {
-                                    if best_difficulty.gt(&min_difficulty) {
+                                    if i == 0 {
+                                        progress_bar.set_message(format!(
+                                            "Mining... ({} / {} difficulty)",
+                                            global_best_difficulty,
+                                            min_difficulty,
+                                        ));
+                                    }
+                                    if global_best_difficulty.ge(&min_difficulty) {
                                         // Mine until min difficulty has been met
                                         break;
                                     }
                                 } else if i == 0 {
                                     progress_bar.set_message(format!(
-                                        "Mining... ({} sec remaining)",
+                                        "Mining... ({} / {} difficulty, {} sec remaining)",
+                                        global_best_difficulty,
+                                        min_difficulty,
                                         cutoff_time.saturating_sub(timer.elapsed().as_secs()),
                                     ));
                                 }
@@ -174,7 +191,7 @@ impl Miner {
         }
     }
 
-    async fn should_reset(&self, config: Config) -> bool {
+    async fn _should_reset(&self, config: Config) -> bool {
         let clock = get_clock(&self.rpc_client).await;
         config
             .last_reset_at
