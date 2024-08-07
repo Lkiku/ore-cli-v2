@@ -49,7 +49,7 @@ impl Miner {
 
             // Run drillx
             let config = get_config(&self.rpc_client).await;
-            let custom_min_difficulty: u32 = 15;
+            let custom_min_difficulty: u32 = 17;
             let solution = Self::find_hash_par(
                 proof,
                 cutoff_time,
