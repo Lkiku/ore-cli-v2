@@ -1,0 +1,11 @@
+RPC_URL="Your rpc url"
+KEY_FOLDER="Your json file"
+
+./target/release/ore \
+    --rpc ${RPC_URL} \
+    --keypair ${KEY_FOLDER} \
+    --priority-fee 5000 \
+    --max-adaptive-tip 50000 \
+    mine \
+    --threads 16 \
+    --custom-min-difficulty 15
