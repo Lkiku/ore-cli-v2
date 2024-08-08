@@ -279,7 +279,7 @@ impl Miner {
             sleep(Duration::from_millis(400 * ( attempts + 1 ))).await;
 
             attempts += 1;
-            if attempts > 2 {
+            if attempts > 5 {
                 progress_bar.finish_with_message(format!("{}: Max retries", "ERROR".bold().red()));
                 return Err(Box::new(ClientError {
                     request: None,
