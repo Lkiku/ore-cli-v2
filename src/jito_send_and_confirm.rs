@@ -105,7 +105,7 @@ pub struct JitoTips {
 }
 
 impl JitoTips {
-    pub fn p50(&self) -> u64 {
+    pub fn _p50(&self) -> u64 {
         (self.p50_landed * 1e9f64) as u64
     }
 
@@ -294,7 +294,7 @@ impl Miner {
 
 }
 
-async fn make_jito_request<T>(method: &'static str, params: Value) -> eyre::Result<T>
+async fn _make_jito_request<T>(method: &'static str, params: Value) -> eyre::Result<T>
 where
     T: de::DeserializeOwned,
 {

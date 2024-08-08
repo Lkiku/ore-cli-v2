@@ -35,6 +35,9 @@ impl Miner {
         let tips = Arc::new(RwLock::new(JitoTips::default()));
         subscribe_jito_tips(tips.clone()).await;
 
+        // logs amount_mining
+        let mut amount_mining: u64 = 0;
+
         // Start mining loop
         loop {
             // Fetch proof
@@ -44,17 +47,26 @@ impl Miner {
                 amount_u64_to_string(proof.balance)
             );
 
+            if amount_mining != 0 {
+                amount_mining = proof.balance - amount_mining;
+                println!(
+                    "{} {}",
+                    "+".green(),
+                    amount_u64_to_string(amount_mining)
+                )
+            }
+            amount_mining = proof.balance;
+
             // Calc cutoff time
             let cutoff_time = self.get_cutoff(proof, args.buffer_time).await;
 
             // Run drillx
             let config = get_config(&self.rpc_client).await;
-            let custom_min_difficulty: u32 = 17;
             let solution = Self::find_hash_par(
                 proof,
                 cutoff_time,
                 args.threads,
-                max(custom_min_difficulty,config.min_difficulty as u32),
+                max(args.custom_min_difficulty,config.min_difficulty) as u32,
             )
             .await;
 
